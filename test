@@ -1,0 +1,6 @@
+program ex(input, output);
+var x: integer;
+var y: real;
+
+begin
+end
