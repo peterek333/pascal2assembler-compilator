@@ -1,6 +1,8 @@
 #include "symtable.hpp"
 #include "parser.hpp"
 
+vector<string> supportedMethods = { "write", "read" };
+
 int tempSymbolsCounter = 0;
 string tempSymbolPrefix = "$t";
 
@@ -39,6 +41,7 @@ Symbol& SymTable::get(string id) {
 }
 
 int SymTable::find(string id) {
+    //start from end because we want local symbols first
     for (int index = symbols.size() - 1; index >= 0; index--) {
         if (symbols[index].id == id) {
             return index;

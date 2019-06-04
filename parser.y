@@ -1,10 +1,12 @@
 %{
 	#include "symtable.hpp"
     #include "writer.hpp"
+    
+    extern vector<string> supportedMethods;
 
     SymTable symTable;
 
-    std::vector<int> identifiersVector;
+    vector<int> identifiersVector;
     string mainLabel;
     int subprogramOffset = 0;
 
@@ -18,8 +20,10 @@
     int createExpression(int op, int leftSideIndex, int rightSideIndex);
     void createAssignment(int leftSideIndex, int rightSideIndex);
     string getAddressOrIdIfNumber(Symbol symbol);
-    void createCallMethod(Symbol method);
+    int createCallMethod(int methodIndex);
+    void createCallFunctionOrProcedure(Symbol method);
     bool allArgumentsPassed(Symbol method);
+    bool isSupportedMethod(string methodName);
 %}
 
 
@@ -185,17 +189,27 @@ procedure_statement:
     ID {
         Symbol method = symTable.get($1);
         if (allArgumentsPassed(method)) {
-            createCallMethod(method);
+            createCallFunctionOrProcedure(method);
         }
     }
     |
-    ID '(' expression_list ')'
+    ID '(' expression_list ')' {
+        int returnedSymbolIndex = createCallMethod($1);
+        if (symTable.get($1).token == FUNCTION) {
+            $$ = returnedSymbolIndex;
+        }
+        identifiersVector.clear();
+    }
     ;
 
 expression_list:
-    expression
+    expression {
+        identifiersVector.push_back($1);
+    }
     |
-    expression_list ',' expression
+    expression_list ',' expression {
+        identifiersVector.push_back($3);
+    }
     ;
 
 expression:
@@ -329,7 +343,24 @@ string getAddressOrIdIfNumber(Symbol symbol) {
         : to_string(symbol.address);
 }
 
-void createCallMethod(Symbol method) {
+int createCallMethod(int methodIndex) {
+    Symbol method = symTable.get(methodIndex);
+    if (method.token == FUNCTION) { 
+        return 1;
+    } else if (method.token == PROCEDURE) {
+        //call
+    } else if (isSupportedMethod(method.id)) {
+        for (auto& identifier: identifiersVector) {
+            Symbol methodSymbol = symTable.get(identifier);
+            displaySupportedMethod(method.id, methodSymbol.type, getAddressOrIdIfNumber(methodSymbol));
+        }
+    } else {
+        yyerror("Function or procedure does not exist");
+    }
+    return -1;
+}
+
+void createCallFunctionOrProcedure(Symbol method) {
     displayMethod(MethodType::Call, method.id);
 }
 
@@ -343,4 +374,11 @@ bool allArgumentsPassed(Symbol method) {
         }
     }
     return false;   //because it is not function or procedure
+}
+
+bool isSupportedMethod(string methodName) {
+    return find(
+        supportedMethods.begin(),
+        supportedMethods.end(),
+        methodName) != supportedMethods.end();
 }

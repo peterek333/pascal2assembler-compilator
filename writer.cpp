@@ -52,6 +52,16 @@ void displayMethod(MethodType methodType, string text) {
     displayCommand(command);
 }
 
+void displaySupportedMethod(string methodName, Type methodType, string value) {
+    string command = "\t" + methodName;
+
+    command += getTypeSuffix(methodType);
+    command += spaceBetween;
+    command += value;
+
+    displayCommand(command);
+}
+
 void displayJump(string label) {
     string command = "\tjump.i" + spaceBetween + "#" + label;
 
