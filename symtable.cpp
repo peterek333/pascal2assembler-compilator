@@ -67,7 +67,9 @@ Symbol SymTable::createSymbol(string id, int token, Type type) {
     symbol.id = id;
     symbol.token = token;
     symbol.type = type;
-    symbol.address = calculateAddress(type);
+    if (token == ID) {
+        symbol.address = calculateAddress(type);
+    }
 
     return symbol;
 }

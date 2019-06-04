@@ -2,11 +2,13 @@
 
 void displayCommand(string command);
 void displayLabel(string label);
+void displayEnter(int offset);
+void displaySubprogramEnd();
+void displayMethod(MethodType methodType, string text);
 void displayJump(string label);
-void displayMov(Type type, int lhs, int rhs);
-void displayAddop(int token, Type type, int lhs, int rhs, int dst);
-void displayCast(Type type, int lhs, int dst);
-string formatAddresses(int first = -1, int second = -1, int third = -1);
+void displayMov(Type type, string value, int destination);
+void displayAddop(int token, Type type, string lhs, string rhs, int dst);
+void displayCast(Type type, string value, int destination);
 string getNextLabel();
 string getTypeSuffix(Type type);
 string getCastFunctionByType(Type type);

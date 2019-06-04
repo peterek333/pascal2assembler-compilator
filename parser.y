@@ -5,13 +5,21 @@
     SymTable symTable;
 
     std::vector<int> identifiersVector;
-    string label;
+    string mainLabel;
+    int subprogramOffset = 0;
+
+    const char* outputFilename = "output.asm";
+    ofstream outputFile;
 
     void fillSymbolIfTypeIsKnown(int identifier, int type_);
     void castTypeIfNeeded(Symbol& leftSide, Symbol& rightSide);
     void castTypeForAssignmentIfNeeded(Symbol& leftSide, Symbol& rightSide);
+    Symbol castVarOrNumber(Type type, Symbol symbol);
     int createExpression(int op, int leftSideIndex, int rightSideIndex);
     void createAssignment(int leftSideIndex, int rightSideIndex);
+    string getAddressOrIdIfNumber(Symbol symbol);
+    void createCallMethod(Symbol method);
+    bool allArgumentsPassed(Symbol method);
 %}
 
 
@@ -54,19 +62,20 @@
 
 program:
     PROGRAM ID '(' identifier_list ')' ';' {
-        label = getNextLabel();
-        displayJump(label);
+        mainLabel = getNextLabel();
+        displayJump(mainLabel);
         identifiersVector.clear();
     }
-    declarations {
-        displayLabel(label);
+    declarations
+    subprogram_declarations {
+        displayLabel(mainLabel);
     }
-    subprogram_declarations
     compound_statement {
         //symTable.print();
     }
     '.' {
         displayCommand("\texit");
+        symTable.print();
     }
     ;
 
@@ -102,19 +111,26 @@ standard_type:
 
 subprogram_declarations:
     subprogram_declarations subprogram_declaration
+    ';' {
+        displaySubprogramEnd();
+    }
     |
     ;
 
 subprogram_declaration:
-    subprogram_head
-    declarations
-    compound_statement
+    subprogram_head declarations compound_statement {
+        displayEnter(subprogramOffset);
+    }
     ;
 
 subprogram_head:
     FUNCTION ID arguments ':' standard_type ';'
     |
-    PROCEDURE ID arguments ';'
+    PROCEDURE ID arguments ';' {
+        Symbol& procedure = symTable.get($2);
+        procedure.token = PROCEDURE;
+        displayLabel(procedure.id);
+    }
     ;
 
 arguments:
@@ -166,7 +182,12 @@ variable:
     ;
 
 procedure_statement:
-    ID
+    ID {
+        Symbol method = symTable.get($1);
+        if (allArgumentsPassed(method)) {
+            createCallMethod(method);
+        }
+    }
     |
     ID '(' expression_list ')'
     ;
@@ -222,10 +243,18 @@ void yyerror(char *s)
     fprintf(stderr, "%s\n", s);
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
     /* yydebug = 1; */
+    if (argc > 2) {
+        outputFilename = argv[1];
+    }
+    outputFile.open(outputFilename);
+
     yyparse();
+
+    outputFile.close();
+    
     return 0;
 }
 
@@ -248,26 +277,26 @@ void fillSymbolIfTypeIsKnown(int identifier, int type_) {
 
 void castTypeIfNeeded(Symbol& leftSide, Symbol& rightSide) {
     if (leftSide.type == Type::Real && rightSide.type == Type::Integer) {
-        Symbol temp = symTable.insertTemp(Type::Real);
-        displayCast(rightSide.type, rightSide.address, temp.address);
-        rightSide = temp;
+        rightSide = castVarOrNumber(Type::Real, rightSide);
     } else if (leftSide.type == Type::Integer && rightSide.type == Type::Real) {
-        Symbol temp = symTable.insertTemp(Type::Real);
-        displayCast(leftSide.type, leftSide.address, temp.address);
-        leftSide = temp;
+        leftSide = castVarOrNumber(Type::Real, leftSide);
     }
 }
 
 void castTypeForAssignmentIfNeeded(Symbol& leftSide, Symbol& rightSide) {
     if (leftSide.type == Type::Real && rightSide.type == Type::Integer) {
-        Symbol temp = symTable.insertTemp(Type::Real);
-        displayCast(rightSide.type, rightSide.address, temp.address);
-        rightSide = temp;
+        rightSide = castVarOrNumber(Type::Real, rightSide);
     } else if (leftSide.type == Type::Integer && rightSide.type == Type::Real) {
-        Symbol temp = symTable.insertTemp(Type::Integer);
-        displayCast(rightSide.type, rightSide.address, temp.address);
-        rightSide = temp;
+        rightSide = castVarOrNumber(Type::Integer, rightSide);
     }
+}
+
+Symbol castVarOrNumber(Type type, Symbol symbol) {
+    Symbol temp = symTable.insertTemp(type);
+    string value = getAddressOrIdIfNumber(symbol);
+    
+    displayCast(symbol.type, value, temp.address);
+    return temp;
 }
 
 int createExpression(int op, int leftSideIndex, int rightSideIndex) {
@@ -277,7 +306,9 @@ int createExpression(int op, int leftSideIndex, int rightSideIndex) {
 
     int resultIndex = symTable.insertTempReturnIndex(leftSide.type);
     Symbol resultSymbol = symTable.get(resultIndex);
-    displayAddop(op, resultSymbol.type, leftSide.address, rightSide.address, resultSymbol.address);
+    string lhs = getAddressOrIdIfNumber(leftSide);
+    string rhs = getAddressOrIdIfNumber(rightSide);
+    displayAddop(op, resultSymbol.type, lhs, rhs, resultSymbol.address);
     
     return resultIndex;
 }
@@ -287,5 +318,29 @@ void createAssignment(int leftSideIndex, int rightSideIndex) {
     Symbol rightSide = symTable.get(rightSideIndex);
 
     castTypeForAssignmentIfNeeded(leftSide, rightSide);
-    displayMov(leftSide.type, rightSide.address, leftSide.address);
+    string movedValue = getAddressOrIdIfNumber(rightSide);
+    
+    displayMov(leftSide.type, movedValue, leftSide.address);
+}
+
+string getAddressOrIdIfNumber(Symbol symbol) {
+    return symbol.token == NUMBER
+        ? "#" + symbol.id
+        : to_string(symbol.address);
+}
+
+void createCallMethod(Symbol method) {
+    displayMethod(MethodType::Call, method.id);
+}
+
+bool allArgumentsPassed(Symbol method) {
+    if (method.token == FUNCTION || method.token == PROCEDURE) {
+        if (method.arguments.size() > 0) {
+            yyerror("Function or procedure does not have enough arguments");
+            return false;
+        } else {
+            return true;
+        }
+    }
+    return false;   //because it is not function or procedure
 }

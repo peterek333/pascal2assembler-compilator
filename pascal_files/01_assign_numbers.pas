@@ -3,6 +3,8 @@ var x, y: integer;
 var g,h:real;
 
 begin
-	h:=1+2.3*g+x/y+5;
-  x:=h
+	x:=2;
+	x:=2.5;
+	h:=2;
+	h:=2.5
 end.

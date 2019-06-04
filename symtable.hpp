@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sstream>
@@ -17,11 +18,18 @@ enum class Type {
     Real = 1
 };
 
+enum class MethodType {
+    Call,
+    Write
+};
+
 struct Symbol {
     string id;
     int token;
     int address;
     Type type;
+    /* only functions and procedures */
+    vector<Type> arguments;
 };
 
 class SymTable {
