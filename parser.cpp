@@ -70,6 +70,8 @@
     extern vector<string> supportedMethods;
 
     SymTable symTable;
+    SymTable dumpedTable;
+    bool isGlobal = true;
 
     vector<int> identifiersVector;
     string mainLabel;
@@ -90,7 +92,7 @@
     bool allArgumentsPassed(Symbol method);
     bool isSupportedMethod(string methodName);
 
-#line 94 "parser.cpp" /* yacc.c:339  */
+#line 96 "parser.cpp" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -175,7 +177,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 179 "parser.cpp" /* yacc.c:358  */
+#line 181 "parser.cpp" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -473,14 +475,14 @@ static const yytype_uint8 yytranslate[] =
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint8 yyrline[] =
+static const yytype_uint16 yyrline[] =
 {
-       0,    68,    68,    74,    77,    68,    87,    91,    97,   103,
-     107,   111,   113,   117,   121,   125,   131,   133,   141,   142,
-     146,   148,   152,   158,   159,   163,   165,   169,   173,   175,
-     177,   179,   183,   185,   189,   196,   206,   210,   216,   218,
-     222,   224,   226,   230,   234,   236,   242,   244,   246,   248,
-     250
+       0,    70,    70,    76,    79,    70,    89,    93,    99,   105,
+     109,   113,   115,   119,   120,   124,   135,   139,   153,   154,
+     158,   165,   169,   175,   176,   180,   182,   186,   190,   192,
+     194,   196,   200,   202,   206,   213,   223,   227,   233,   235,
+     239,   241,   243,   247,   251,   253,   259,   261,   263,   265,
+     267
 };
 #endif
 
@@ -1323,114 +1325,136 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 68 "parser.y" /* yacc.c:1646  */
+#line 70 "parser.y" /* yacc.c:1646  */
     {
         mainLabel = getNextLabel();
         displayJump(mainLabel);
         identifiersVector.clear();
     }
-#line 1333 "parser.cpp" /* yacc.c:1646  */
+#line 1335 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 3:
-#line 74 "parser.y" /* yacc.c:1646  */
+#line 76 "parser.y" /* yacc.c:1646  */
     {
         displayLabel(mainLabel);
     }
-#line 1341 "parser.cpp" /* yacc.c:1646  */
+#line 1343 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 4:
-#line 77 "parser.y" /* yacc.c:1646  */
+#line 79 "parser.y" /* yacc.c:1646  */
     {
         //symTable.print();
     }
-#line 1349 "parser.cpp" /* yacc.c:1646  */
+#line 1351 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 5:
-#line 80 "parser.y" /* yacc.c:1646  */
+#line 82 "parser.y" /* yacc.c:1646  */
     {
         displayCommand("\texit");
         symTable.print();
     }
-#line 1358 "parser.cpp" /* yacc.c:1646  */
+#line 1360 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 87 "parser.y" /* yacc.c:1646  */
+#line 89 "parser.y" /* yacc.c:1646  */
     {
         identifiersVector.push_back((yyvsp[0]));
     }
-#line 1366 "parser.cpp" /* yacc.c:1646  */
+#line 1368 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 91 "parser.y" /* yacc.c:1646  */
+#line 93 "parser.y" /* yacc.c:1646  */
     {
         identifiersVector.push_back((yyvsp[0]));
     }
-#line 1374 "parser.cpp" /* yacc.c:1646  */
+#line 1376 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 97 "parser.y" /* yacc.c:1646  */
+#line 99 "parser.y" /* yacc.c:1646  */
     {
         for (auto &identifier: identifiersVector) {
             fillSymbolIfTypeIsKnown(identifier, (yyvsp[-1]));
         }
         identifiersVector.clear();
     }
-#line 1385 "parser.cpp" /* yacc.c:1646  */
-    break;
-
-  case 13:
-#line 118 "parser.y" /* yacc.c:1646  */
-    {
-        displaySubprogramEnd();
-    }
-#line 1393 "parser.cpp" /* yacc.c:1646  */
+#line 1387 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 15:
-#line 125 "parser.y" /* yacc.c:1646  */
+#line 124 "parser.y" /* yacc.c:1646  */
     {
-        displayEnter(subprogramOffset);
+        isGlobal = true;
+        displayLabel(symTable.get((yyvsp[-2])).id);
+        displayEnter(symTable.getLocalLastAddress());
+        displayLocalFromBuffer();
+        displaySubprogramEnd();
+        symTable = dumpedTable.deepCopy();
     }
-#line 1401 "parser.cpp" /* yacc.c:1646  */
+#line 1400 "parser.cpp" /* yacc.c:1646  */
+    break;
+
+  case 16:
+#line 135 "parser.y" /* yacc.c:1646  */
+    {
+        isGlobal = false;
+    }
+#line 1408 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 17:
-#line 133 "parser.y" /* yacc.c:1646  */
+#line 139 "parser.y" /* yacc.c:1646  */
     {
+        isGlobal = false;
         Symbol& procedure = symTable.get((yyvsp[-2]));
         procedure.token = PROCEDURE;
-        displayLabel(procedure.id);
+        procedure.global = true;
+        procedure.address = 8;
+        
+        dumpedTable = symTable.deepCopy();
+
+        (yyval) = symTable.find(procedure.id);
     }
-#line 1411 "parser.cpp" /* yacc.c:1646  */
+#line 1424 "parser.cpp" /* yacc.c:1646  */
+    break;
+
+  case 20:
+#line 158 "parser.y" /* yacc.c:1646  */
+    {//do sprawdzenia
+        for (auto &identifier: identifiersVector) {
+            fillSymbolIfTypeIsKnown(identifier, (yyvsp[0]));
+        }
+        identifiersVector.clear();
+    }
+#line 1435 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 169 "parser.y" /* yacc.c:1646  */
+#line 186 "parser.y" /* yacc.c:1646  */
     {
         createAssignment((yyvsp[-2]), (yyvsp[0]));
     }
-#line 1419 "parser.cpp" /* yacc.c:1646  */
+#line 1443 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 189 "parser.y" /* yacc.c:1646  */
+#line 206 "parser.y" /* yacc.c:1646  */
     {
         Symbol method = symTable.get((yyvsp[0]));
         if (allArgumentsPassed(method)) {
             createCallFunctionOrProcedure(method);
         }
     }
-#line 1430 "parser.cpp" /* yacc.c:1646  */
+#line 1454 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 196 "parser.y" /* yacc.c:1646  */
+#line 213 "parser.y" /* yacc.c:1646  */
     {
         int returnedSymbolIndex = createCallMethod((yyvsp[-3]));
         if (symTable.get((yyvsp[-3])).token == FUNCTION) {
@@ -1438,43 +1462,43 @@ yyreduce:
         }
         identifiersVector.clear();
     }
-#line 1442 "parser.cpp" /* yacc.c:1646  */
-    break;
-
-  case 36:
-#line 206 "parser.y" /* yacc.c:1646  */
-    {
-        identifiersVector.push_back((yyvsp[0]));
-    }
-#line 1450 "parser.cpp" /* yacc.c:1646  */
-    break;
-
-  case 37:
-#line 210 "parser.y" /* yacc.c:1646  */
-    {
-        identifiersVector.push_back((yyvsp[0]));
-    }
-#line 1458 "parser.cpp" /* yacc.c:1646  */
-    break;
-
-  case 42:
-#line 226 "parser.y" /* yacc.c:1646  */
-    {
-        (yyval) = createExpression((yyvsp[-1]), (yyvsp[-2]), (yyvsp[0]));
-    }
 #line 1466 "parser.cpp" /* yacc.c:1646  */
     break;
 
-  case 45:
-#line 236 "parser.y" /* yacc.c:1646  */
+  case 36:
+#line 223 "parser.y" /* yacc.c:1646  */
     {
-        (yyval) = createExpression((yyvsp[-1]), (yyvsp[-2]), (yyvsp[0]));
+        identifiersVector.push_back((yyvsp[0]));
     }
 #line 1474 "parser.cpp" /* yacc.c:1646  */
     break;
 
+  case 37:
+#line 227 "parser.y" /* yacc.c:1646  */
+    {
+        identifiersVector.push_back((yyvsp[0]));
+    }
+#line 1482 "parser.cpp" /* yacc.c:1646  */
+    break;
 
-#line 1478 "parser.cpp" /* yacc.c:1646  */
+  case 42:
+#line 243 "parser.y" /* yacc.c:1646  */
+    {
+        (yyval) = createExpression((yyvsp[-1]), (yyvsp[-2]), (yyvsp[0]));
+    }
+#line 1490 "parser.cpp" /* yacc.c:1646  */
+    break;
+
+  case 45:
+#line 253 "parser.y" /* yacc.c:1646  */
+    {
+        (yyval) = createExpression((yyvsp[-1]), (yyvsp[-2]), (yyvsp[0]));
+    }
+#line 1498 "parser.cpp" /* yacc.c:1646  */
+    break;
+
+
+#line 1502 "parser.cpp" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1702,7 +1726,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 253 "parser.y" /* yacc.c:1906  */
+#line 270 "parser.y" /* yacc.c:1906  */
 
 
 void yyerror(char *s)
@@ -1761,8 +1785,9 @@ void castTypeForAssignmentIfNeeded(Symbol& leftSide, Symbol& rightSide) {
 Symbol castVarOrNumber(Type type, Symbol symbol) {
     Symbol temp = symTable.insertTemp(type);
     string value = getAddressOrIdIfNumber(symbol);
+    string tempValue = getAddressOrIdIfNumber(temp);
     
-    displayCast(symbol.type, value, temp.address);
+    displayCast(symbol.type, value, tempValue);
     return temp;
 }
 
@@ -1773,9 +1798,11 @@ int createExpression(int op, int leftSideIndex, int rightSideIndex) {
 
     int resultIndex = symTable.insertTempReturnIndex(leftSide.type);
     Symbol resultSymbol = symTable.get(resultIndex);
+    
     string lhs = getAddressOrIdIfNumber(leftSide);
     string rhs = getAddressOrIdIfNumber(rightSide);
-    displayAddop(op, resultSymbol.type, lhs, rhs, resultSymbol.address);
+    string dst = getAddressOrIdIfNumber(resultSymbol);
+    displayAddop(op, resultSymbol.type, lhs, rhs, dst);
     
     return resultIndex;
 }
@@ -1786,14 +1813,17 @@ void createAssignment(int leftSideIndex, int rightSideIndex) {
 
     castTypeForAssignmentIfNeeded(leftSide, rightSide);
     string movedValue = getAddressOrIdIfNumber(rightSide);
+    string leftSideValue = getAddressOrIdIfNumber(leftSide);
     
-    displayMov(leftSide.type, movedValue, leftSide.address);
+    displayMov(leftSide.type, movedValue, leftSideValue);
 }
 
 string getAddressOrIdIfNumber(Symbol symbol) {
     return symbol.token == NUMBER
         ? "#" + symbol.id
-        : to_string(symbol.address);
+        : (symbol.global
+            ? to_string(symbol.address)
+            : "BP" + to_string(symbol.address));
 }
 
 int createCallMethod(int methodIndex) {

@@ -2031,7 +2031,7 @@ int insertOrGetIfExist(string id, int token, Type type) {
     if ( !symTable.exists(id)) {
         return symTable.insert(id, token, type);
     } else {
-        return yylval = symTable.find(id);
+        return symTable.find(id);
     }
 }
 

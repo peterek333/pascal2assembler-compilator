@@ -1,10 +1,13 @@
 program example(input, output);
-var x, y: integer;
-var g,h:real;
+var x: integer;
+var h: real;
+
+procedure f;
+var x, a: integer;
+begin
+  x:=h+2
+end;
 
 begin
-	write(1);
-	write(2);
-	write(x);
-	write(y)
+  f
 end.

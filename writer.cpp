@@ -2,15 +2,31 @@
 #include "parser.hpp"
 
 extern ofstream outputFile;
+extern bool isGlobal;
+
+stringstream localBuffer;
 
 bool SHOW_ON_CONSOLE = true;
 int labelCounter = 0;
 string spaceBetween = "\t\t";
 
 void displayCommand(string command) {
+    if (isGlobal) {
+        if (SHOW_ON_CONSOLE) {
+            cout << command << endl;
+        } else {
+            outputFile << command << endl; 
+        }   
+    } else {
+        localBuffer << command << endl;
+    }
+}
+
+void displayLocalFromBuffer() {
     if (SHOW_ON_CONSOLE) {
-        cout << command << endl;
-        //outputFile << command << endl; 
+        cout << localBuffer.rdbuf();
+    } else {
+        outputFile << localBuffer.rdbuf(); 
     }
 }
 
@@ -68,18 +84,18 @@ void displayJump(string label) {
     displayCommand(command);
 }
 
-void displayMov(Type type, string value, int destination) {
+void displayMov(Type type, string value, string destination) {
     string command = "\tmov";
     command += getTypeSuffix(type);
 
     command += spaceBetween;
     command += value;
-    command += "," + to_string(destination);
+    command += "," + destination;
 
     displayCommand(command);
 }
 
-void displayAddop(int token, Type type, string lhs, string rhs, int dst) {
+void displayAddop(int token, Type type, string lhs, string rhs, string dst) {
     string command= "\t";
     command += getFunctionByToken(token);
     command += getTypeSuffix(type);
@@ -87,18 +103,18 @@ void displayAddop(int token, Type type, string lhs, string rhs, int dst) {
     command += spaceBetween;
     command += lhs;
     command += "," + rhs;
-    command += "," + to_string(dst);
+    command += "," + dst;
 
     displayCommand(command);
 }
 
-void displayCast(Type type, string value, int destination) {
+void displayCast(Type type, string value, string destination) {
     string command = "\t";
     command += getCastFunctionByType(type);
     command += "\t";
 
     command += value;
-    command += "," + to_string(destination);
+    command += "," + destination;
 
     displayCommand(command);
 }

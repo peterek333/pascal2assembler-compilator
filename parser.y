@@ -5,6 +5,8 @@
     extern vector<string> supportedMethods;
 
     SymTable symTable;
+    SymTable dumpedTable;
+    bool isGlobal = true;
 
     vector<int> identifiersVector;
     string mainLabel;
@@ -70,7 +72,7 @@ program:
         displayJump(mainLabel);
         identifiersVector.clear();
     }
-    declarations
+    declarations 
     subprogram_declarations {
         displayLabel(mainLabel);
     }
@@ -114,26 +116,36 @@ standard_type:
     ;
 
 subprogram_declarations:
-    subprogram_declarations subprogram_declaration
-    ';' {
-        displaySubprogramEnd();
-    }
+    subprogram_declarations subprogram_declaration ';'
     |
     ;
 
 subprogram_declaration:
     subprogram_head declarations compound_statement {
-        displayEnter(subprogramOffset);
+        isGlobal = true;
+        displayLabel(symTable.get($1).id);
+        displayEnter(symTable.getLocalLastAddress());
+        displayLocalFromBuffer();
+        displaySubprogramEnd();
+        symTable = dumpedTable.deepCopy();
     }
     ;
 
 subprogram_head:
-    FUNCTION ID arguments ':' standard_type ';'
+    FUNCTION ID arguments ':' standard_type ';' {
+        isGlobal = false;
+    }
     |
     PROCEDURE ID arguments ';' {
+        isGlobal = false;
         Symbol& procedure = symTable.get($2);
         procedure.token = PROCEDURE;
-        displayLabel(procedure.id);
+        procedure.global = true;
+        procedure.address = 8;
+        
+        dumpedTable = symTable.deepCopy();
+
+        $$ = symTable.find(procedure.id);
     }
     ;
 
@@ -143,7 +155,12 @@ arguments:
     ;
 
 parameter_list:
-    identifier_list ':' type
+    identifier_list ':' type {//do sprawdzenia
+        for (auto &identifier: identifiersVector) {
+            fillSymbolIfTypeIsKnown(identifier, $3);
+        }
+        identifiersVector.clear();
+    }
     |
     parameter_list ';' identifier_list ':' type
     ;
@@ -308,8 +325,9 @@ void castTypeForAssignmentIfNeeded(Symbol& leftSide, Symbol& rightSide) {
 Symbol castVarOrNumber(Type type, Symbol symbol) {
     Symbol temp = symTable.insertTemp(type);
     string value = getAddressOrIdIfNumber(symbol);
+    string tempValue = getAddressOrIdIfNumber(temp);
     
-    displayCast(symbol.type, value, temp.address);
+    displayCast(symbol.type, value, tempValue);
     return temp;
 }
 
@@ -320,9 +338,11 @@ int createExpression(int op, int leftSideIndex, int rightSideIndex) {
 
     int resultIndex = symTable.insertTempReturnIndex(leftSide.type);
     Symbol resultSymbol = symTable.get(resultIndex);
+    
     string lhs = getAddressOrIdIfNumber(leftSide);
     string rhs = getAddressOrIdIfNumber(rightSide);
-    displayAddop(op, resultSymbol.type, lhs, rhs, resultSymbol.address);
+    string dst = getAddressOrIdIfNumber(resultSymbol);
+    displayAddop(op, resultSymbol.type, lhs, rhs, dst);
     
     return resultIndex;
 }
@@ -333,14 +353,17 @@ void createAssignment(int leftSideIndex, int rightSideIndex) {
 
     castTypeForAssignmentIfNeeded(leftSide, rightSide);
     string movedValue = getAddressOrIdIfNumber(rightSide);
+    string leftSideValue = getAddressOrIdIfNumber(leftSide);
     
-    displayMov(leftSide.type, movedValue, leftSide.address);
+    displayMov(leftSide.type, movedValue, leftSideValue);
 }
 
 string getAddressOrIdIfNumber(Symbol symbol) {
     return symbol.token == NUMBER
         ? "#" + symbol.id
-        : to_string(symbol.address);
+        : (symbol.global
+            ? to_string(symbol.address)
+            : "BP" + to_string(symbol.address));
 }
 
 int createCallMethod(int methodIndex) {
