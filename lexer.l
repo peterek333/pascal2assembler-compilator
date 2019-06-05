@@ -3,11 +3,14 @@
 	#include "parser.hpp"
 
     extern SymTable symTable;
+    extern SymTable localSymTable;
+    extern bool isGlobal;
 
     int getMulopToken(string val);
     int getSignToken(string val);
     int getRelopToken(string val);
     int insertOrGetIfExist(string id, int token, Type type);
+    int insertOrGetFrom(SymTable& table, string id, int token, Type type);
 %}
 
 digit               [0-9]
@@ -134,10 +137,20 @@ int getRelopToken(string val) {
 }
 
 int insertOrGetIfExist(string id, int token, Type type) {
-    if ( !symTable.exists(id)) {
-        return symTable.insert(id, token, type);
+    cout << "Wstawiam " << id << " - " << token << endl;
+    return insertOrGetFrom(
+        isGlobal ? symTable : localSymTable,
+        id,
+        token,
+        type
+    );
+}
+
+int insertOrGetFrom(SymTable& table, string id, int token, Type type) {
+    if ( !table.exists(id)) {
+        return table.insert(id, token, type);
     } else {
-        return yylval = symTable.find(id);
+        return yylval = table.find(id);
     }
 }
 

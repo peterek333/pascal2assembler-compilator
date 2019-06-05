@@ -5,6 +5,7 @@
     extern vector<string> supportedMethods;
 
     SymTable symTable;
+    SymTable localSymTable;
 
     vector<int> identifiersVector;
     string mainLabel;
@@ -82,6 +83,7 @@ program:
     '.' {
         displayCommand("\texit");
         symTable.print();
+        localSymTable.print();
     }
     ;
 
@@ -132,15 +134,21 @@ subprogram_declaration:
     ;
 
 subprogram_head:
-    FUNCTION ID arguments ':' standard_type ';' {
+    FUNCTION ID {
         isGlobal = false;
     }
+    arguments ':' standard_type ';' {
+
+    }
     |
-    PROCEDURE ID arguments ';' {
-        isGlobal = false;
+    PROCEDURE ID {
         Symbol& procedure = symTable.get($2);
         procedure.token = PROCEDURE;
         displayLabel(procedure.id);
+        isGlobal = false;
+    }
+    arguments ';' {
+
     }
     ;
 
