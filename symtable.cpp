@@ -1,6 +1,8 @@
 #include "symtable.hpp"
 #include "parser.hpp"
 
+extern bool isGlobal;
+
 vector<string> supportedMethods = { "write", "read" };
 
 int tempSymbolsCounter = 0;
@@ -30,7 +32,6 @@ void SymTable::fillSymbol(int symbolIndex, int token, Type type) {
     symbol.type = type;
     symbol.address = calculateAddress(type);
 }
-
 
 Symbol& SymTable::get(int index) {
     return symbols.at(index);
