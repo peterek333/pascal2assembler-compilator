@@ -75,6 +75,7 @@
 
     vector<int> identifiersVector;
     string mainLabel;
+
     int subprogramOffset = 0;
 
     const char* outputFilename = "output.asm";
@@ -92,7 +93,7 @@
     bool allArgumentsPassed(Symbol method);
     bool isSupportedMethod(string methodName);
 
-#line 96 "parser.cpp" /* yacc.c:339  */
+#line 97 "parser.cpp" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -177,7 +178,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 181 "parser.cpp" /* yacc.c:358  */
+#line 182 "parser.cpp" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -477,12 +478,12 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,    70,    70,    76,    79,    70,    89,    93,    99,   105,
-     109,   113,   115,   119,   120,   124,   135,   139,   153,   154,
-     158,   165,   169,   175,   176,   180,   182,   186,   190,   192,
-     194,   196,   200,   202,   206,   213,   223,   227,   233,   235,
-     239,   241,   243,   247,   251,   253,   259,   261,   263,   265,
-     267
+       0,    71,    71,    77,    80,    71,    90,    94,   100,   106,
+     110,   114,   116,   120,   121,   125,   136,   140,   154,   155,
+     159,   166,   170,   176,   177,   181,   183,   187,   191,   193,
+     195,   197,   201,   203,   207,   214,   224,   228,   234,   236,
+     240,   242,   244,   248,   252,   254,   260,   262,   264,   266,
+     268
 };
 #endif
 
@@ -1325,69 +1326,69 @@ yyreduce:
   switch (yyn)
     {
         case 2:
-#line 70 "parser.y" /* yacc.c:1646  */
+#line 71 "parser.y" /* yacc.c:1646  */
     {
         mainLabel = getNextLabel();
         displayJump(mainLabel);
         identifiersVector.clear();
     }
-#line 1335 "parser.cpp" /* yacc.c:1646  */
+#line 1336 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 3:
-#line 76 "parser.y" /* yacc.c:1646  */
+#line 77 "parser.y" /* yacc.c:1646  */
     {
         displayLabel(mainLabel);
     }
-#line 1343 "parser.cpp" /* yacc.c:1646  */
+#line 1344 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 4:
-#line 79 "parser.y" /* yacc.c:1646  */
+#line 80 "parser.y" /* yacc.c:1646  */
     {
         //symTable.print();
     }
-#line 1351 "parser.cpp" /* yacc.c:1646  */
+#line 1352 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 5:
-#line 82 "parser.y" /* yacc.c:1646  */
+#line 83 "parser.y" /* yacc.c:1646  */
     {
         displayCommand("\texit");
         symTable.print();
     }
-#line 1360 "parser.cpp" /* yacc.c:1646  */
+#line 1361 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 6:
-#line 89 "parser.y" /* yacc.c:1646  */
+#line 90 "parser.y" /* yacc.c:1646  */
     {
         identifiersVector.push_back((yyvsp[0]));
     }
-#line 1368 "parser.cpp" /* yacc.c:1646  */
+#line 1369 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 7:
-#line 93 "parser.y" /* yacc.c:1646  */
+#line 94 "parser.y" /* yacc.c:1646  */
     {
         identifiersVector.push_back((yyvsp[0]));
     }
-#line 1376 "parser.cpp" /* yacc.c:1646  */
+#line 1377 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 8:
-#line 99 "parser.y" /* yacc.c:1646  */
+#line 100 "parser.y" /* yacc.c:1646  */
     {
         for (auto &identifier: identifiersVector) {
             fillSymbolIfTypeIsKnown(identifier, (yyvsp[-1]));
         }
         identifiersVector.clear();
     }
-#line 1387 "parser.cpp" /* yacc.c:1646  */
+#line 1388 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 15:
-#line 124 "parser.y" /* yacc.c:1646  */
+#line 125 "parser.y" /* yacc.c:1646  */
     {
         isGlobal = true;
         displayLabel(symTable.get((yyvsp[-2])).id);
@@ -1396,19 +1397,19 @@ yyreduce:
         displaySubprogramEnd();
         symTable = dumpedTable.deepCopy();
     }
-#line 1400 "parser.cpp" /* yacc.c:1646  */
+#line 1401 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 16:
-#line 135 "parser.y" /* yacc.c:1646  */
+#line 136 "parser.y" /* yacc.c:1646  */
     {
         isGlobal = false;
     }
-#line 1408 "parser.cpp" /* yacc.c:1646  */
+#line 1409 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 17:
-#line 139 "parser.y" /* yacc.c:1646  */
+#line 140 "parser.y" /* yacc.c:1646  */
     {
         isGlobal = false;
         Symbol& procedure = symTable.get((yyvsp[-2]));
@@ -1420,41 +1421,41 @@ yyreduce:
 
         (yyval) = symTable.find(procedure.id);
     }
-#line 1424 "parser.cpp" /* yacc.c:1646  */
+#line 1425 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 20:
-#line 158 "parser.y" /* yacc.c:1646  */
+#line 159 "parser.y" /* yacc.c:1646  */
     {//do sprawdzenia
         for (auto &identifier: identifiersVector) {
             fillSymbolIfTypeIsKnown(identifier, (yyvsp[0]));
         }
         identifiersVector.clear();
     }
-#line 1435 "parser.cpp" /* yacc.c:1646  */
+#line 1436 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 27:
-#line 186 "parser.y" /* yacc.c:1646  */
+#line 187 "parser.y" /* yacc.c:1646  */
     {
         createAssignment((yyvsp[-2]), (yyvsp[0]));
     }
-#line 1443 "parser.cpp" /* yacc.c:1646  */
+#line 1444 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 34:
-#line 206 "parser.y" /* yacc.c:1646  */
+#line 207 "parser.y" /* yacc.c:1646  */
     {
         Symbol method = symTable.get((yyvsp[0]));
         if (allArgumentsPassed(method)) {
             createCallFunctionOrProcedure(method);
         }
     }
-#line 1454 "parser.cpp" /* yacc.c:1646  */
+#line 1455 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 35:
-#line 213 "parser.y" /* yacc.c:1646  */
+#line 214 "parser.y" /* yacc.c:1646  */
     {
         int returnedSymbolIndex = createCallMethod((yyvsp[-3]));
         if (symTable.get((yyvsp[-3])).token == FUNCTION) {
@@ -1462,43 +1463,43 @@ yyreduce:
         }
         identifiersVector.clear();
     }
-#line 1466 "parser.cpp" /* yacc.c:1646  */
+#line 1467 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 36:
-#line 223 "parser.y" /* yacc.c:1646  */
+#line 224 "parser.y" /* yacc.c:1646  */
     {
         identifiersVector.push_back((yyvsp[0]));
     }
-#line 1474 "parser.cpp" /* yacc.c:1646  */
+#line 1475 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 37:
-#line 227 "parser.y" /* yacc.c:1646  */
+#line 228 "parser.y" /* yacc.c:1646  */
     {
         identifiersVector.push_back((yyvsp[0]));
     }
-#line 1482 "parser.cpp" /* yacc.c:1646  */
+#line 1483 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 42:
-#line 243 "parser.y" /* yacc.c:1646  */
+#line 244 "parser.y" /* yacc.c:1646  */
     {
         (yyval) = createExpression((yyvsp[-1]), (yyvsp[-2]), (yyvsp[0]));
     }
-#line 1490 "parser.cpp" /* yacc.c:1646  */
+#line 1491 "parser.cpp" /* yacc.c:1646  */
     break;
 
   case 45:
-#line 253 "parser.y" /* yacc.c:1646  */
+#line 254 "parser.y" /* yacc.c:1646  */
     {
         (yyval) = createExpression((yyvsp[-1]), (yyvsp[-2]), (yyvsp[0]));
     }
-#line 1498 "parser.cpp" /* yacc.c:1646  */
+#line 1499 "parser.cpp" /* yacc.c:1646  */
     break;
 
 
-#line 1502 "parser.cpp" /* yacc.c:1646  */
+#line 1503 "parser.cpp" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1726,7 +1727,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 270 "parser.y" /* yacc.c:1906  */
+#line 271 "parser.y" /* yacc.c:1906  */
 
 
 void yyerror(char *s)
@@ -1759,6 +1760,7 @@ void fillSymbolIfTypeIsKnown(int identifier, int type_) {
             type = Type::Real;
             break;
         default:
+            yyerror("Not supported type");
             break;
     }
     if (type != Type::Unknown) {

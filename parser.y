@@ -10,6 +10,7 @@
 
     vector<int> identifiersVector;
     string mainLabel;
+
     int subprogramOffset = 0;
 
     const char* outputFilename = "output.asm";
@@ -299,6 +300,7 @@ void fillSymbolIfTypeIsKnown(int identifier, int type_) {
             type = Type::Real;
             break;
         default:
+            yyerror("Not supported type");
             break;
     }
     if (type != Type::Unknown) {
