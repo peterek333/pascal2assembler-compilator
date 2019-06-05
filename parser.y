@@ -8,7 +8,9 @@
 
     vector<int> identifiersVector;
     string mainLabel;
+
     int subprogramOffset = 0;
+    bool isGlobal = true;
 
     const char* outputFilename = "output.asm";
     ofstream outputFile;
@@ -117,20 +119,25 @@ subprogram_declarations:
     subprogram_declarations subprogram_declaration
     ';' {
         displaySubprogramEnd();
+        isGlobal = true;
     }
     |
     ;
 
 subprogram_declaration:
-    subprogram_head declarations compound_statement {
+    subprogram_head declarations {
         displayEnter(subprogramOffset);
     }
+    compound_statement
     ;
 
 subprogram_head:
-    FUNCTION ID arguments ':' standard_type ';'
+    FUNCTION ID arguments ':' standard_type ';' {
+        isGlobal = false;
+    }
     |
     PROCEDURE ID arguments ';' {
+        isGlobal = false;
         Symbol& procedure = symTable.get($2);
         procedure.token = PROCEDURE;
         displayLabel(procedure.id);
@@ -282,10 +289,12 @@ void fillSymbolIfTypeIsKnown(int identifier, int type_) {
             type = Type::Real;
             break;
         default:
+            yyerror("Not supported type");
             break;
     }
     if (type != Type::Unknown) {
         symTable.fillSymbol(identifier, VAR, type);
+        symTable.get(identifier).global = isGlobal;
     }
 }
 
