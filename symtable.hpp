@@ -29,7 +29,9 @@ struct Symbol {
     int token;
     int address;
     Type type;
+
     bool global;
+    bool reference = false;
     /* only functions and procedures */
     vector<Type> arguments;
 };

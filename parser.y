@@ -9,7 +9,9 @@
     bool isGlobal = true;
 
     vector<int> identifiersVector;
+    vector<int> parameterVector;
     string mainLabel;
+    string actualMethodLabel;
 
     int subprogramOffset = 0;
 
@@ -20,6 +22,8 @@
     void castTypeIfNeeded(Symbol& leftSide, Symbol& rightSide);
     void castTypeForAssignmentIfNeeded(Symbol& leftSide, Symbol& rightSide);
     Symbol castVarOrNumber(Type type, Symbol symbol);
+    void addParameters(int type_);
+    void fillParameters();
     int createExpression(int op, int leftSideIndex, int rightSideIndex);
     void createAssignment(int leftSideIndex, int rightSideIndex);
     string getAddressOrIdIfNumber(Symbol symbol);
@@ -124,7 +128,7 @@ subprogram_declarations:
 subprogram_declaration:
     subprogram_head declarations compound_statement {
         isGlobal = true;
-        displayLabel(symTable.get($1).id);
+        displayLabel(actualMethodLabel);
         displayEnter(symTable.getLocalLastAddress());
         displayLocalFromBuffer();
         displaySubprogramEnd();
@@ -137,7 +141,7 @@ subprogram_head:
         isGlobal = false;
     }
     |
-    PROCEDURE ID arguments ';' {
+    PROCEDURE ID {
         isGlobal = false;
         Symbol& procedure = symTable.get($2);
         procedure.token = PROCEDURE;
@@ -146,24 +150,29 @@ subprogram_head:
         
         dumpedTable = symTable.deepCopy();
 
-        $$ = symTable.find(procedure.id);
+        actualMethodLabel = procedure.id;
+    }
+    arguments ';' {
+
     }
     ;
 
 arguments:
-    '(' parameter_list ')'
+    '(' parameter_list ')' {
+        fillParameters();
+        symTable.print();
+    }
     |
     ;
 
-parameter_list:
-    identifier_list ':' type {//do sprawdzenia
-        for (auto &identifier: identifiersVector) {
-            fillSymbolIfTypeIsKnown(identifier, $3);
-        }
-        identifiersVector.clear();
+ parameter_list:
+     identifier_list ':' type {
+        addParameters($3);
     }
     |
-    parameter_list ';' identifier_list ':' type
+    parameter_list ';' identifier_list ':' type {
+        addParameters($5);
+    }
     ;
 
 compound_statement:
@@ -333,6 +342,27 @@ Symbol castVarOrNumber(Type type, Symbol symbol) {
     return temp;
 }
 
+void addParameters(int type_) {
+    for (auto &identifier: identifiersVector) {
+        symTable.get(identifier).reference = true;
+        fillSymbolIfTypeIsKnown(identifier, type_);
+        parameterVector.push_back(identifier);
+    }
+    identifiersVector.clear();
+}
+
+void fillParameters() {
+    Symbol& method = symTable.get(actualMethodLabel);
+    reverse(begin(parameterVector), end(parameterVector));
+    for (auto &parameterIndex: parameterVector) {
+        Symbol& parameter = symTable.get(parameterIndex);
+        parameter.address = method.address;
+        method.address += 4;
+        method.arguments.push_back(parameter.type);
+    }
+    parameterVector.clear();
+}
+
 int createExpression(int op, int leftSideIndex, int rightSideIndex) {
     Symbol leftSide = symTable.get(leftSideIndex);
     Symbol rightSide = symTable.get(rightSideIndex);
@@ -365,7 +395,9 @@ string getAddressOrIdIfNumber(Symbol symbol) {
         ? "#" + symbol.id
         : (symbol.global
             ? to_string(symbol.address)
-            : "BP" + to_string(symbol.address));
+            : (symbol.reference
+                ? "*BP+" + to_string(symbol.address)
+                : "BP" + to_string(symbol.address)));
 }
 
 int createCallMethod(int methodIndex) {

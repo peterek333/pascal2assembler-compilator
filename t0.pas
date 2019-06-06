@@ -1,13 +1,9 @@
 program example(input, output);
-var x: integer;
-var h: real;
 
-procedure f;
-var x, a: integer;
+procedure f(a: integer; r: real; b:integer);
 begin
-  x:=h+2
+  a:=b+r
 end;
 
 begin
-  f
 end.

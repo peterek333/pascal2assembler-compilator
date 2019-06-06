@@ -29,7 +29,9 @@ void SymTable::fillSymbol(int symbolIndex, int token, Type type) {
     Symbol& symbol = get(symbolIndex);
     symbol.token = token;
     symbol.type = type;
-    symbol.address = calculateAddress(type);
+    if ( !symbol.reference) {
+        symbol.address = calculateAddress(type);
+    }
     symbol.global = isGlobal;
 }
 
@@ -66,6 +68,7 @@ void SymTable::print() {
         << ", " << static_cast<std::underlying_type<Type>::type>(symbols[i].type) 
         << ", " << symbols[i].address
         << ", " << (symbols[i].global ? "G" : "LOC")
+        << ", " << symbols[i].reference
         << ") || ";
     }
     cout << "\n";
