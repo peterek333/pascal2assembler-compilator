@@ -7,6 +7,7 @@
     int getMulopToken(string val);
     int getSignToken(string val);
     int getRelopToken(string val);
+    int insertOrGetIfExist(string id, int token, Type type);
 %}
 
 digit               [0-9]
@@ -52,19 +53,15 @@ or					{ return OR; }
 not					{ return NOT; }
 
 {digits}            { 
-                        yylval = symTable.insert(yytext, ID, Type::Integer); 
+                        yylval = insertOrGetIfExist(yytext, NUMBER, Type::Integer); 
                         return NUMBER; 
                     }
 {num}               { 
-                        yylval = symTable.insert(yytext, ID, Type::Real); 
+                        yylval = insertOrGetIfExist(yytext, NUMBER, Type::Real); 
                         return NUMBER; 
                     }
-{id}                { 
-                        if ( !symTable.exists(yytext)) {
-                            yylval = symTable.insert(yytext, ID, Type::Unknown);
-                        } else {
-                            yylval = symTable.find(yytext);
-                        }
+{id}                {
+                        yylval = insertOrGetIfExist(yytext, ID, Type::Unknown);
                         return ID;  
                     }
 
@@ -134,5 +131,13 @@ int getRelopToken(string val) {
     }
     return 0;
 
+}
+
+int insertOrGetIfExist(string id, int token, Type type) {
+    if ( !symTable.exists(id)) {
+        return symTable.insert(id, token, type);
+    } else {
+        return symTable.find(id);
+    }
 }
 

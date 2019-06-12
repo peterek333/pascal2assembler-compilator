@@ -5,9 +5,11 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -17,18 +19,36 @@ enum class Type {
     Real = 1
 };
 
+enum class MethodType {
+    Call,
+    Write
+};
+
 struct Symbol {
     string id;
     int token;
     int address;
     Type type;
+
+    bool global;
+    bool reference = false;
+    /* only functions and procedures */
+    vector<Type> arguments;
+    int argumentsAddress;
+
+public:
+    void print();
 };
 
 class SymTable {
     vector<Symbol> symbols;
     int lastAddress = 0;
+    int localLastAddress = 0;
+
     Symbol createSymbol(string id, int token, Type type);
     int calculateAddress(Type type);
+    int globalAddress(Type type);
+    int localAddress(Type type);
 
 public:
     int insert(string id, int token, Type type);
@@ -41,7 +61,11 @@ public:
     int find(string id);
     bool exists(string id);
 
+    int getLocalLastAddress();
+
     void print();
+    
+    SymTable deepCopy();
 };
 
 extern SymTable symTable;   //TODO usunac
