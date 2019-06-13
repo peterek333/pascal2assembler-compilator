@@ -14,6 +14,8 @@
     string actualMethodLabel;
 
     int subprogramOffset = 0;
+    string elseLabel = "";
+    string afterIf = "";
 
     const char* outputFilename = "output.asm";
     ofstream outputFile;
@@ -24,15 +26,20 @@
     Symbol castVarOrNumber(Type type, Symbol symbol);
     void addParameters(int type_);
     void fillParameters();
+
     int createExpression(int op, int leftSideIndex, int rightSideIndex);
     void createAssignment(int leftSideIndex, int rightSideIndex);
     string getAddressOrIdIfNumber(Symbol symbol);
     void createMethodInMemoryAndDumpSymTable(int methodIndex, int _methodToken);
     void fillFunctionReturnType(int functionIndex, int _returnType);
-    int createCallMethod(int methodIndex);
-    void createCallFunctionOrProcedure(Symbol method);
-    bool allArgumentsPassed(Symbol method);
+    
+    int createCallMethod(Symbol method);
+    void createTempParameterIfNumber(Symbol& parameter, Type parameterType);
+    int pushReturnTempIfFunction(Symbol method, int& incsp);
+    void validNoArgsMethod(Symbol method);
     bool isSupportedMethod(string methodName);
+
+    void createRelopJump(int _relopToken, int leftSideIndex, int rightSideIndex, string label);
 %}
 
 
@@ -70,6 +77,8 @@
 %token LTE
 %token EQ
 %token NOTEQ
+%token MOD
+%token AND
 
 %%
 
@@ -149,9 +158,7 @@ subprogram_head:
     PROCEDURE ID {
         createMethodInMemoryAndDumpSymTable($2, PROCEDURE);
     }
-    arguments ';' {
-
-    }
+    arguments ';'
     ;
 
 arguments:
@@ -197,7 +204,20 @@ statement:
     |
     compound_statement
     |
-    IF expression THEN statement ELSE statement
+    IF expression {
+        elseLabel = getNextLabel();
+        int falseValue = symTable.insertIfNotExist("0", NUMBER, Type::Integer);
+        //je - jump to else if expression is false
+        createRelopJump(EQ, $2, falseValue, elseLabel);
+    } THEN statement {
+        afterIf = getNextLabel();
+        displayJump(afterIf);
+        displayLabel(elseLabel);
+    } ELSE statement {
+        displayLabel(afterIf);
+        // elseLabel = "";
+        // afterIf = "";
+    }
     |
     WHILE expression DO statement
     ;
@@ -211,15 +231,29 @@ variable:
 procedure_statement:
     ID {
         Symbol method = symTable.get($1);
-        if (allArgumentsPassed(method)) {
-            createCallFunctionOrProcedure(method);
+        validNoArgsMethod(method);
+        
+        if(method.token == FUNCTION) {
+            $$ = createCallMethod(method);
+        } else if (method.token == PROCEDURE) {
+            createCallMethod(method);
+        } else {
+            cout << method.id << " is not procedure or function" << endl;
         }
     }
     |
     ID '(' expression_list ')' {
-        int returnedSymbolIndex = createCallMethod($1);
-        if (symTable.get($1).token == FUNCTION) {
-            $$ = returnedSymbolIndex;
+        Symbol method = symTable.get($1);
+        
+        if(isSupportedMethod(method.id)) {
+            Symbol methodSymbol = symTable.get(identifiersVector.back());
+            displaySupportedMethod(method.id, methodSymbol.type, getAddressOrIdIfNumber(methodSymbol));
+        } else if (method.token == FUNCTION) {
+            $$ = createCallMethod(method);
+        } else if (method.token == PROCEDURE) {
+            createCallMethod(method);
+        } else {
+            cout << method.id << " is not procedure or function" << endl;
         }
         identifiersVector.clear();
     }
@@ -238,7 +272,24 @@ expression_list:
 expression:
     simple_expression
     |
-    simple_expression RELOP simple_expression
+    simple_expression RELOP simple_expression {
+        string labelTrue = getNextLabel();
+        createRelopJump($2, $1, $3, labelTrue);
+
+        Symbol relopResult = symTable.insertTemp(Type::Integer);
+        int falseValue = symTable.insertIfNotExist("0", NUMBER, Type::Integer);
+        createAssignment(symTable.find(relopResult.id), falseValue);
+
+        string labelEndRelop = getNextLabel();
+        displayJump(labelEndRelop);
+        displayLabel(labelTrue);
+
+        int trueValue = symTable.insertIfNotExist("1", NUMBER, Type::Integer);
+        createAssignment(symTable.find(relopResult.id), trueValue);
+        displayLabel(labelEndRelop);
+
+        $$ = symTable.find(relopResult.id);
+    }
     ;
 
 simple_expression:
@@ -250,7 +301,9 @@ simple_expression:
         $$ = createExpression($2, $1, $3);
     }
     |
-    simple_expression OR term
+    simple_expression OR term {
+        $$ = createExpression(OR, $1, $3);
+    }
     ;
 
 term:
@@ -262,13 +315,41 @@ term:
     ;
 
 factor:
-    variable
+    variable {
+        int variableIndex = $1;
+        Symbol function = symTable.get($1);
+        if (function.token == FUNCTION) {
+            validNoArgsMethod(function);
+
+            int incsp = 0;
+            variableIndex = pushReturnTempIfFunction(function, incsp);
+
+            displayMethod(MethodType::Call, function.id);
+            if (incsp != 0) {
+                displayIncsp(incsp);
+            }
+        } else if (function.token == PROCEDURE) { 
+            cout << "Procedure can't return value" << endl;
+            throw exception();
+        }
+        $$ = variableIndex;
+    }
     |
-    ID '(' expression_list ')'
+    ID '(' expression_list ')' {
+        Symbol function = symTable.get($1);
+        if (function.token != FUNCTION) {
+            cout << function.id << " is not a function" << endl;
+            throw exception();
+        }
+        $$ = createCallMethod(function);
+        identifiersVector.clear();
+    }
     |
     NUMBER
     |
-    '(' expression ')'
+    '(' expression ')' {
+        $$ = $2;
+    }
     |
     NOT factor
     ;
@@ -349,12 +430,19 @@ void addParameters(int type_) {
 
 void fillParameters() {
     Symbol& method = symTable.get(actualMethodLabel);
+    Symbol& dumpedMethod = dumpedTable.get(actualMethodLabel);
     reverse(begin(parameterVector), end(parameterVector));
     for (auto &parameterIndex: parameterVector) {
         Symbol& parameter = symTable.get(parameterIndex);
         parameter.address = method.argumentsAddress;
         method.argumentsAddress += 4;
-        method.arguments.push_back(parameter.type);
+        
+        method.arguments.insert(
+            method.arguments.begin(), parameter.type);
+        dumpedMethod.arguments.insert(
+            dumpedMethod.arguments.begin(), parameter.type); //need this information after reset symTable
+        // method.arguments.push_back(parameter.type);
+        // dumpedMethod.arguments.push_back(parameter.type); //need this information after reset symTable
     }
     parameterVector.clear();
 }
@@ -396,6 +484,14 @@ string getAddressOrIdIfNumber(Symbol symbol) {
                 : "BP" + to_string(symbol.address)));
 }
 
+string getPushAddress(Symbol symbol) {
+    return symbol.global
+        ? "#" + to_string(symbol.address)
+        : symbol.reference
+            ? "BP+" + to_string(symbol.address)
+            : "#BP" + to_string(symbol.address);
+}
+
 void createMethodInMemoryAndDumpSymTable(int methodIndex, int _methodToken) {
     isGlobal = false;
 
@@ -417,47 +513,81 @@ void createMethodInMemoryAndDumpSymTable(int methodIndex, int _methodToken) {
 
 void fillFunctionReturnType(int functionIndex, int _returnType) {
     Symbol& function = symTable.get(functionIndex);
+    Symbol& dumpFunction = dumpedTable.get(functionIndex);
     if (_returnType == INTEGER) {
         function.type = Type::Integer;
+        dumpFunction.type = Type::Integer;
     } else if (_returnType == REAL) {
         function.type = Type::Real;
+        dumpFunction.type = Type::Real;
     } else {
         cout << "Unsupported return type for " << function.id << " function" << endl;
         throw exception();
     }
 }
 
-int createCallMethod(int methodIndex) {
-    Symbol method = symTable.get(methodIndex);
-    if (method.token == FUNCTION) { 
-        return 1;
-    } else if (method.token == PROCEDURE) {
-        //call
-    } else if (isSupportedMethod(method.id)) {
-        for (auto& identifier: identifiersVector) {
-            Symbol methodSymbol = symTable.get(identifier);
-            displaySupportedMethod(method.id, methodSymbol.type, getAddressOrIdIfNumber(methodSymbol));
-        }
-    } else {
-        yyerror("Function or procedure does not exist");
+int createCallMethod(Symbol method) {
+    if (method.arguments.size() != identifiersVector.size()) {
+        cout << "Function or procedure does not have enough arguments (name: " << method.id << ")" << endl;
+        throw exception();
     }
-    return -1;
-}
+    int incsp = 0;
+    for (int i = 0; i < identifiersVector.size(); ++i) {
+        Type type = method.arguments[i];
+        Symbol parameter = symTable.get(identifiersVector[i]);
 
-void createCallFunctionOrProcedure(Symbol method) {
+        if (type != parameter.type) {
+            cout << "Method " << method.id
+            << " has invalid type of " << i << "  parameter" << endl;
+        }
+
+        createTempParameterIfNumber(parameter, type);
+
+        string pushAddress = getPushAddress(parameter);
+        displayPush(pushAddress);
+        incsp += 4;
+    }
+
+    int returnIndex = pushReturnTempIfFunction(method, incsp);
+
     displayMethod(MethodType::Call, method.id);
+    if (incsp != 0) {
+        displayIncsp(incsp);
+    }
+
+    return returnIndex;
 }
 
-bool allArgumentsPassed(Symbol method) {
+void createTempParameterIfNumber(Symbol& parameter, Type parameterType) {
+    if (parameter.token == NUMBER) {
+        Symbol temp = symTable.insertTemp(parameterType);
+        string leftValue = getAddressOrIdIfNumber(parameter);
+        string rightValue = getAddressOrIdIfNumber(temp);
+
+        displayMov(parameter.type, leftValue, rightValue);
+
+        parameter = temp;
+    }
+}
+
+int pushReturnTempIfFunction(Symbol method, int& incsp) {
+    if (method.token == FUNCTION) {
+        Symbol returnTemp = symTable.insertTemp(method.type);
+        string pushAddress = getPushAddress(returnTemp);
+        displayPush(pushAddress);
+        incsp += 4;
+        return symTable.find(returnTemp.id);
+    }
+    return 0;
+}
+
+void validNoArgsMethod(Symbol method) {
     if (method.token == FUNCTION || method.token == PROCEDURE) {
         if (method.arguments.size() > 0) {
-            yyerror("Function or procedure does not have enough arguments");
-            return false;
-        } else {
-            return true;
+            cout << "Function or procedure has arguments (name: " << method.id << ")" << endl;
+            throw exception();
         }
     }
-    return false;   //because it is not function or procedure
 }
 
 bool isSupportedMethod(string methodName) {
@@ -465,4 +595,16 @@ bool isSupportedMethod(string methodName) {
         supportedMethods.begin(),
         supportedMethods.end(),
         methodName) != supportedMethods.end();
+}
+
+void createRelopJump(int _relopToken, int leftSideIndex, int rightSideIndex, string label) {
+    Symbol leftSymbol = symTable.get(leftSideIndex);
+    Symbol rightSymbol = symTable.get(rightSideIndex);
+
+    castTypeIfNeeded(leftSymbol, rightSymbol);
+
+    string leftValue = getAddressOrIdIfNumber(leftSymbol);
+    string rightValue = getAddressOrIdIfNumber(rightSymbol);
+
+    displayRelopJump(_relopToken, leftSymbol.type, leftValue, rightValue, label);
 }

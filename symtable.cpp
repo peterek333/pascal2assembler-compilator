@@ -16,8 +16,12 @@ void Symbol::print() {
     << " [address]"
     << ", " << (global ? "G" : "LOC")
     << ", " << reference
-    << " [reference]"
-    << ")" << endl; 
+    << " [reference]";
+    if (token == PROCEDURE || token == FUNCTION) {
+        cout << ", [argsSize] " 
+        << arguments.size();
+    }
+    cout << ")" << endl; 
 }
 
 int SymTable::insert(string id, int token, Type type) {
@@ -35,6 +39,14 @@ int SymTable::insertTempReturnIndex(Type type) {
     string tempId = tempSymbolPrefix + to_string(tempSymbolsCounter++);
 
     return insert(tempId, ID, type);
+}
+
+int SymTable::insertIfNotExist(string id, int token, Type type) {
+    int index = find(id);
+    if (index == -1) {
+        return insert(id, token, type);
+    }
+    return index;
 }
 
 void SymTable::fillSymbol(int symbolIndex, int token, Type type) {
@@ -55,8 +67,7 @@ Symbol& SymTable::get(string id) {
     return get(find(id));
 }
 
-int SymTable::find(string id) {
-    //start from end because we want local symbols first    
+int SymTable::find(string id) {  
     for (int index = symbols.size() - 1; index >= 0; index--) {
         if (symbols[index].id == id)  {
             return index;

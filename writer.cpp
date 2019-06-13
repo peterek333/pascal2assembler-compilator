@@ -96,6 +96,24 @@ void displayMov(Type type, string value, string destination) {
     displayCommand(command);
 }
 
+void displayPush(string address) {
+    string command = "\tpush.i";
+
+    command += spaceBetween;
+    command += address;
+
+    displayCommand(command);
+}
+
+void displayIncsp(int incspValue) {
+    string command = "\tincsp.i";
+
+    command += spaceBetween;
+    command += "#" + to_string(incspValue);
+
+    displayCommand(command);
+}
+
 void displayAddop(int token, Type type, string lhs, string rhs, string dst) {
     string command= "\t";
     command += getFunctionByToken(token);
@@ -120,6 +138,19 @@ void displayCast(Type type, string value, string destination) {
     displayCommand(command);
 }
 
+void displayRelopJump(int token, Type type, string leftValue, string rightValue, string label) {
+    string command = "\t";
+    command += getRelop(token);
+    command += getTypeSuffix(type);
+
+    command += spaceBetween;
+    command += leftValue;
+    command += "," + rightValue;
+    command += ",#" + label;
+
+    displayCommand(command);
+}
+
 string getNextLabel() {
     return "lab" + to_string(labelCounter++);
 }
@@ -130,6 +161,7 @@ string getTypeSuffix(Type type) {
     } else if (type == Type::Real) {
         return ".r";
     }
+    cout << "Unrecognized type" << endl;
     throw exception();
 }
 
@@ -151,9 +183,32 @@ string getFunctionByToken(int token) {
         return "mul";
     } else if ( token == DIV ) {
         return "div";
+    } else if ( token == AND ) {
+        return "and";
+    } else if ( token == OR ) {
+        return "or";
+    } else if ( token == MOD ) {
+        return "mod";
     }
 
     return "syntax error";
     //throw exception();
 }
 
+string getRelop(int token) {
+    if ( token == EQ) {
+        return "je";
+    } else if ( token == NOTEQ ) {
+        return "jne";
+    } else if ( token == LTE ) {
+        return "jle";
+    } else if ( token == GTE ) {
+        return "jge";
+    } else if ( token == GT ) {
+        return "jg";
+    } else if ( token == LT ) {
+        return "jl";\
+    }
+    cout << "Error relop" << endl;
+    throw exception();
+}

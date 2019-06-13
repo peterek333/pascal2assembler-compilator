@@ -54,6 +54,7 @@ public:
     int insert(string id, int token, Type type);
     Symbol& insertTemp(Type type);
     int insertTempReturnIndex(Type type);
+    int insertIfNotExist(string id, int token, Type type);
     void fillSymbol(int symbolIndex, int token, Type type);
 
     Symbol& get(int index);

@@ -1,3 +1,5 @@
+%option noyywrap
+
 %{
 	#include "symtable.hpp"
 	#include "parser.hpp"
@@ -20,7 +22,7 @@ character           [a-zA-Z]
 id                  {character}({character}|{digit})*
 
 assignop            :=
-mulop               \*|\/|(div)|(mod)|(and)
+mulop               "*"|"/"|"div"|"mod"|"and"
 sign                \+|-
 relop               >|<|>=|<=|=|<>
 
@@ -52,20 +54,10 @@ do					{ return DO; }
 or					{ return OR; }
 not					{ return NOT; }
 
-{digits}            { 
-                        yylval = insertOrGetIfExist(yytext, NUMBER, Type::Integer); 
-                        return NUMBER; 
+{relop}             {
+                        yylval = getRelopToken(yytext);
+                        return RELOP;
                     }
-{num}               { 
-                        yylval = insertOrGetIfExist(yytext, NUMBER, Type::Real); 
-                        return NUMBER; 
-                    }
-{id}                {
-                        yylval = insertOrGetIfExist(yytext, ID, Type::Unknown);
-                        return ID;  
-                    }
-
-{assignop}          { return ASSIGNOP; }
 {mulop}             {
                         yylval = getMulopToken(yytext);
                         return MULOP;
@@ -74,21 +66,29 @@ not					{ return NOT; }
                         yylval = getSignToken(yytext);
                         return SIGN;
                     }
-{relop}             {
-                        yylval = getRelopToken(yytext);
-                        return RELOP;
+{assignop}          { return ASSIGNOP; }
+{id}                {
+                        yylval = insertOrGetIfExist(yytext, ID, Type::Unknown);
+                        return ID;  
                     }
-
+{num}               { 
+                        yylval = insertOrGetIfExist(yytext, NUMBER, Type::Real); 
+                        return NUMBER; 
+                    }
+{digits}            { 
+                        yylval = insertOrGetIfExist(yytext, NUMBER, Type::Integer); 
+                        return NUMBER; 
+                    }
 {whitespace}        { /* NIC */ }
-{default_chars}     { return *yytext; }
+.                   { return *yytext; }
 {comment}           { /* NIC */ }
 
 %%
 
-int yywrap(void) 
-{
-    return 1;
-}
+// int yywrap(void) 
+// {
+//     return 1;
+// }
 
 int getMulopToken(string val) {
     if ( !val.compare("*") ) {
@@ -97,6 +97,12 @@ int getMulopToken(string val) {
     if ( !val.compare("/") || !val.compare("div") ) {
         return DIV;
     }
+	if ( !val.compare("mod") ) {
+		return MOD;
+	}
+	if ( !val.compare("and")) {
+		return AND;
+	}
     return 0;
 }
 
